@@ -128,7 +128,6 @@ class DienstplanSplitter:
         dir_path = filedialog.askdirectory(title="Ausgabeverzeichnis wählen")
         if dir_path:
             self.output_dir = dir_path
-            self.output_label.config(text=dir_path)
 
     def get_output_dir(self):
         if not self.selected_file:
