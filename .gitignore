@@ -36,3 +36,13 @@ env/
 # Project specific
 split_schedules/
 *.pdf 
+
+# PyInstaller build directories
+build/
+dist/
+
+# PyInstaller spec files
+*.spec
+
+# macOS system files
+.DS_Store 
