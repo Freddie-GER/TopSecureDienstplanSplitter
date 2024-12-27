@@ -1,6 +1,13 @@
-# Dienstplan Splitter
+# Dienstplan Splitter für Top Secure
 
 Dieses Programm teilt einen PDF-Dienstplan in einzelne PDFs pro Person auf.
+
+Die Konvention ist 
+Nachname_Vorname_YYYY_MM für Pläne, die nicht für den aktuellen Monat sind, und 
+Nachname_Vorname_YYYY_MM_DD für Pläne, die für den aktuellen Monat sind. So können Planänderungen im laufenden Monat nachvollzogen werden.  
+
+
+
 
 ## Features
 
@@ -10,7 +17,7 @@ Dieses Programm teilt einen PDF-Dienstplan in einzelne PDFs pro Person auf.
 - Erkennt automatisch ein- und zweiseitige Dienstpläne
 - Extrahiert Namen und Datum aus dem PDF
 - Erstellt separate PDFs für jede Person
-- Benennt Dateien automatisch nach dem Schema `Nachname_Vorname_JAHR_MONAT.pdf`
+- Benennt Dateien automatisch 
 
 ## Installation
 
