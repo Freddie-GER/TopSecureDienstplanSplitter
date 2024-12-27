@@ -1,6 +1,8 @@
 # Dienstplan Splitter
 
 Ein Tool zum Aufteilen von TopSecure Dienstplänen, die in einer einzelnen großen PDF liegen in einzelne PDF-Dateien pro Person.
+(TopSecure ist ein Planungsprogramm der BYTE AG und deprecated)
+
 
 ## Features
 - Benutzerfreundliche grafische Oberfläche
