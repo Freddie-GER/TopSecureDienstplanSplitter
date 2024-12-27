@@ -1,6 +1,6 @@
 # Dienstplan Splitter
 
-Ein Tool zum Aufteilen von Dienstplänen in einzelne PDF-Dateien pro Person.
+Ein Tool zum Aufteilen von TopSecure Dienstplänen, die in einer einzelnen großen PDF liegen in einzelne PDF-Dateien pro Person.
 
 ## Installation
 
