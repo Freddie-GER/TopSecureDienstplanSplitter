@@ -9,10 +9,10 @@ Ein Tool zum Aufteilen von TopSecure Dienstplänen, die in einer einzelnen groß
 - Erkennt automatisch ein- und zweiseitige Dienstpläne
 - Extrahiert Namen und Datum aus dem PDF
 - Erstellt separate PDFs für jede Person
-- Benennt Dateien automatisch 
--- Die Konvention ist 
--- Nachname_Vorname_YYYY_MM für Pläne, die nicht für den aktuellen Monat sind, und 
--- Nachname_Vorname_YYYY_MM_DD für Pläne, die für den aktuellen Monat sind. So können Planänderungen im laufenden Monat nachvollzogen werden.  
+- Benennt Dateien automatisch
+-    Die Konvention ist
+-    Nachname_Vorname_YYYY_MM für Pläne, die nicht für den aktuellen Monat sind, und
+-    Nachname_Vorname_YYYY_MM_DD für Pläne, die für den aktuellen Monat sind. So können Planänderungen im laufenden Monat nachvollzogen werden.  
 
 ## Installation
 
