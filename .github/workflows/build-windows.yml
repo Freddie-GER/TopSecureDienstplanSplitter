@@ -1,5 +1,6 @@
 name: Build Windows Executable
 
+# Workflow to build Windows executable for Dienstplan Splitter
 on:
   push:
     branches:
@@ -14,10 +15,10 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: '3.x'
 
@@ -32,7 +33,7 @@ jobs:
         pyinstaller --onefile --windowed dienstplan_splitter_gui.py
 
     - name: Upload artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: dienstplan-splitter
         path: dist/ 
