@@ -1,6 +1,20 @@
 # Dienstplan Splitter
 
-Ein Tool zum Aufteilen von Dienstplänen in einzelne PDF-Dateien pro Person.
+Ein Tool zum Aufteilen von TopSecure Dienstplänen, die in einer einzelnen großen PDF liegen in einzelne PDF-Dateien pro Person.
+(TopSecure ist ein Planungsprogramm der BYTE AG und deprecated)
+
+
+## Features
+- Benutzerfreundliche grafische Oberfläche
+- Einfache Dateiauswahl per Klick
+- Fortschrittsanzeige während der Verarbeitung
+- Erkennt automatisch ein- und zweiseitige Dienstpläne
+- Extrahiert Namen und Datum aus dem PDF
+- Erstellt separate PDFs für jede Person
+- Benennt Dateien automatisch
+  - Die Konvention ist
+    - Nachname_Vorname_YYYY_MM für Pläne, die nicht für den aktuellen Monat sind, und
+    - Nachname_Vorname_YYYY_MM_DD für Pläne, die für den aktuellen Monat sind. So können Planänderungen im laufenden Monat nachvollzogen werden.  
 
 ## Installation
 
