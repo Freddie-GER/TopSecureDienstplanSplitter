@@ -4,9 +4,8 @@ pdfplumber==0.10.3
 Pillow==10.2.0
 
 # Virtual Printer dependencies
-win32printing>=0.1.3  # For Windows printer functionality
 pywin32>=306         # Windows API access
-pythonnet>=3.0.1     # .NET interop for PDF Creator SDK
+watchdog>=3.0.0      # File system monitoring
 
 # Development dependencies
 pyinstaller>=6.11.1  # For creating executables
