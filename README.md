@@ -18,6 +18,9 @@ Ein Tool zum Aufteilen von TopSecure Dienstplänen, die in einer einzelnen groß
 
 ## Installation
 
+- Unter *Actions* steht ein Windows - Download bereit; da die App nicht signiert ist, wir es hier aber ggfs. zu Viruswarnungen kommen!
+- Für den Weg via Python empfehle ich conda oder venv zu nutzen, um die dependencies sauber zu halten
+
 ### Voraussetzungen
 - Python 3.11 oder höher
 - pip (Python Package Manager)
