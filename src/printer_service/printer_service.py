@@ -21,30 +21,19 @@ from typing import Optional
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
-# Set up logging with proper path
-log_dir = Path(os.path.expandvars("%LOCALAPPDATA%")) / "DienstplanSplitter"
-log_dir.mkdir(parents=True, exist_ok=True)
-log_file = log_dir / "printer_service.log"
-
-# Create file handler with immediate flush
-file_handler = logging.FileHandler(log_file)
-file_handler.setLevel(logging.DEBUG)
-file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
-
-# Create console handler
-console_handler = logging.StreamHandler(sys.stdout)
-console_handler.setLevel(logging.DEBUG)
-console_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
-
-# Set up root logger
-logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
-logger.addHandler(file_handler)
-logger.addHandler(console_handler)
+# Set up logging
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('printer_service.log'),
+        logging.StreamHandler(sys.stdout)
+    ]
+)
+logger = logging.getLogger(__name__)
 
 logger.info("="*50)
 logger.info("Starting DienstplanSplitter Virtual Printer")
-logger.info(f"Logging to: {log_file}")
 logger.info("="*50)
 
 # Import our existing splitting logic
