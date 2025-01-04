@@ -74,6 +74,7 @@ def main():
     )
     parser.add_argument(
         'command',
+        nargs='?',  # Make command optional
         choices=['install', 'uninstall', 'status'],
         help='Command to execute'
     )
@@ -84,7 +85,15 @@ def main():
     if not is_admin():
         print("❌ This script must be run as administrator!")
         print("Please right-click and select 'Run as administrator'")
-        sys.exit(1)
+        return  # Changed from sys.exit(1) to allow pause at end
+    
+    # If no command provided, show help and install by default
+    if not args.command:
+        print("No command provided. Available commands:")
+        parser.print_help()
+        print("\nInstalling printer by default...")
+        install_printer()
+        return
     
     if args.command == 'install':
         install_printer()
@@ -97,5 +106,5 @@ if __name__ == "__main__":
     try:
         main()
     finally:
-        print("\nPress Enter to exit...")
+        print("\nPress Enter to continue...")
         input() 

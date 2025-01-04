@@ -72,7 +72,6 @@ jobs:
           --icon=icon.png ^
           --name dienstplan_splitter_printer_setup ^
           --uac-admin ^
-          --noconsole ^
           --paths "src" ^
           src/manage_printer.py
         echo "Installer build completed."
