@@ -2,9 +2,10 @@
 DienstplanSplitter Virtual Printer Service
 
 This module implements a virtual printer service that:
-1. Uses Windows Print to PDF as base driver
-2. Monitors the output directory for new PDFs
-3. Automatically processes them with DienstplanSplitter logic
+1. Creates a redirected printer port
+2. Installs a printer using a standard Windows driver
+3. Captures and converts print jobs to PDF
+4. Automatically processes them with DienstplanSplitter logic
 """
 
 import os
@@ -13,6 +14,7 @@ import time
 import shutil
 import win32print
 import win32api
+import win32con
 from pathlib import Path
 from typing import Optional
 from watchdog.observers import Observer
@@ -75,31 +77,90 @@ class DienstplanPrinterService:
         self.observer = Observer()
         self.observer.schedule(self.event_handler, str(self.temp_dir), recursive=False)
         
+        # Port and driver names
+        self.port_name = "DSPLITTER:"
+        self.driver_name = "Generic / Text Only"
+        
+    def create_port(self) -> bool:
+        """Create a redirected printer port.
+        
+        Returns:
+            bool: True if port creation was successful
+        """
+        try:
+            # Get the port monitor
+            monitors = win32print.EnumMonitors(None, 1)
+            monitor_name = None
+            for monitor in monitors:
+                if "Redirected Port" in monitor[1]:
+                    monitor_name = monitor[1]
+                    break
+                    
+            if not monitor_name:
+                print("Error: Redirected Port monitor not found", file=sys.stderr)
+                return False
+                
+            # Create port info structure
+            port_info = {
+                "Port": self.port_name,
+                "Monitor": monitor_name,
+                "Description": "Dienstplan Splitter Port",
+                "Command": f'cmd.exe /c copy /b "%%1" "{self.temp_dir}\\%%2.pdf"'
+            }
+            
+            # Add the port
+            win32print.AddPort(None, None, port_info)
+            return True
+        except Exception as e:
+            print(f"Error creating port: {e}", file=sys.stderr)
+            return False
+        
     def install_printer(self) -> bool:
-        """Install the printer using Windows Print to PDF driver.
+        """Install the printer using a standard Windows driver.
         
         Returns:
             bool: True if installation was successful
         """
         try:
-            # Get the Windows Print to PDF driver
-            driver_name = "Microsoft Print to PDF"
-            driver_info = win32print.GetPrinterDriverDirectory()
+            # First create our port
+            if not self.create_port():
+                return False
+                
+            # Get system printer driver directory
+            driver_dir = win32print.GetPrinterDriverDirectory()
             
-            # Add our printer port (points to temp directory)
-            port_name = f"DS_PORT:{self.temp_dir}"
+            # Create printer
+            printer_info = {
+                "pServerName": None,
+                "pPrinterName": self.printer_name,
+                "pShareName": "",
+                "pPortName": self.port_name,
+                "pDriverName": self.driver_name,
+                "pComment": "Dienstplan Splitter Virtual Printer",
+                "pLocation": "",
+                "pDevMode": None,
+                "pSepFile": "",
+                "pPrintProcessor": "winprint",
+                "pDatatype": "RAW",
+                "pParameters": "",
+                "pSecurityDescriptor": None,
+                "Attributes": win32print.PRINTER_ATTRIBUTE_LOCAL | win32print.PRINTER_ATTRIBUTE_SHARED,
+                "Priority": 1,
+                "DefaultPriority": 1,
+                "StartTime": 0,
+                "UntilTime": 0,
+                "Status": 0,
+                "cJobs": 0,
+                "AveragePPM": 0
+            }
             
-            # Create the printer
-            win32print.AddPrinter(
-                self.printer_name,
-                2,  # Level 2 for detailed printer info
-                {
-                    "pDriverName": driver_name,
-                    "pPrinterName": self.printer_name,
-                    "pPortName": port_name,
-                }
-            )
-            return True
+            # Add the printer
+            handle = win32print.AddPrinter(None, 2, printer_info)
+            if handle:
+                win32print.ClosePrinter(handle)
+                return True
+            return False
+            
         except Exception as e:
             print(f"Error installing printer: {e}", file=sys.stderr)
             return False
@@ -111,7 +172,14 @@ class DienstplanPrinterService:
             bool: True if uninstallation was successful
         """
         try:
-            win32print.DeletePrinter(self.printer_name)
+            # Delete printer
+            handle = win32print.OpenPrinter(self.printer_name)
+            if handle:
+                win32print.DeletePrinter(handle)
+                win32print.ClosePrinter(handle)
+            
+            # Delete port
+            win32print.DeletePort(None, None, self.port_name)
             return True
         except Exception as e:
             print(f"Error uninstalling printer: {e}", file=sys.stderr)
