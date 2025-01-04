@@ -1,5 +1,13 @@
+# Core dependencies
 PyPDF2==3.0.1
 pdfplumber==0.10.3
-auto-py-to-exe==2.42.0
-py2app==0.28.7
-Pillow==10.2.0 
+Pillow==10.2.0
+
+# Virtual Printer dependencies
+win32printing>=0.1.3  # For Windows printer functionality
+pywin32>=306         # Windows API access
+pythonnet>=3.0.1     # .NET interop for PDF Creator SDK
+
+# Development dependencies
+pyinstaller>=6.11.1  # For creating executables
+pytest>=7.4.0        # For testing 
