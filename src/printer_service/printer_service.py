@@ -15,10 +15,22 @@ import shutil
 import win32print
 import win32api
 import win32con
+import logging
 from pathlib import Path
 from typing import Optional
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
+
+# Set up logging
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('printer_service.log'),
+        logging.StreamHandler(sys.stdout)
+    ]
+)
+logger = logging.getLogger(__name__)
 
 # Import our existing splitting logic
 from ..gui.dienstplan_splitter_gui import DienstplanSplitter
@@ -33,6 +45,7 @@ class PDFHandler(FileSystemEventHandler):
         
     def on_created(self, event):
         if not event.is_directory and event.src_path.lower().endswith('.pdf'):
+            logger.info(f"New PDF detected: {event.src_path}")
             # Wait a moment to ensure the file is completely written
             time.sleep(1)
             self.process_pdf(Path(event.src_path))
@@ -40,6 +53,7 @@ class PDFHandler(FileSystemEventHandler):
     def process_pdf(self, pdf_path: Path):
         """Process a newly created PDF using our existing splitting logic."""
         try:
+            logger.info(f"Processing PDF: {pdf_path}")
             # Create output directory
             output_dir = self.output_dir / pdf_path.stem
             output_dir.mkdir(parents=True, exist_ok=True)
@@ -51,26 +65,25 @@ class PDFHandler(FileSystemEventHandler):
             
             # Clean up the original PDF
             pdf_path.unlink()
+            logger.info(f"Successfully processed PDF: {pdf_path}")
         except Exception as e:
-            print(f"Error processing PDF {pdf_path}: {e}", file=sys.stderr)
+            logger.error(f"Error processing PDF {pdf_path}: {e}", exc_info=True)
 
 class DienstplanPrinterService:
     """Main printer service class that handles printer installation and monitoring."""
     
     def __init__(self, printer_name: str = "Dienstplan Splitter", output_dir: Optional[Path] = None):
-        """Initialize the printer service.
-        
-        Args:
-            printer_name: Name of the virtual printer as it appears in Windows
-            output_dir: Directory where split PDFs will be saved
-        """
+        """Initialize the printer service."""
+        logger.info("Initializing DienstplanPrinterService")
         self.printer_name = printer_name
         self.output_dir = output_dir or Path.home() / "Documents" / "Dienstplan Splitter"
         self.output_dir.mkdir(parents=True, exist_ok=True)
+        logger.info(f"Output directory: {self.output_dir}")
         
         # Create temp directory for initial PDFs
         self.temp_dir = self.output_dir / "temp"
         self.temp_dir.mkdir(exist_ok=True)
+        logger.info(f"Temp directory: {self.temp_dir}")
         
         # Set up file monitoring
         self.event_handler = PDFHandler(self.output_dir)
@@ -79,23 +92,40 @@ class DienstplanPrinterService:
         
         # Port and driver names
         self.port_name = "DSPLITTER:"
-        self.driver_name = "Microsoft XPS Document Writer"  # Using XPS driver instead of Generic
+        self.driver_name = "Microsoft Print to PDF"  # Changed back to PDF driver
+        logger.info(f"Using printer driver: {self.driver_name}")
+        
+    def list_available_drivers(self):
+        """List all available printer drivers on the system."""
+        try:
+            drivers = win32print.EnumPrinterDrivers(None, None, 2)
+            logger.info("Available printer drivers:")
+            for driver in drivers:
+                logger.info(f"  - {driver['Name']}")
+            return drivers
+        except Exception as e:
+            logger.error(f"Error listing drivers: {e}", exc_info=True)
+            return []
         
     def create_port(self) -> bool:
-        """Create a redirected printer port.
-        
-        Returns:
-            bool: True if port creation was successful
-        """
+        """Create a redirected printer port."""
+        logger.info(f"Creating printer port: {self.port_name}")
         try:
             # First remove any existing port
             try:
+                logger.info("Attempting to remove existing port...")
                 win32print.DeletePort(None, None, self.port_name)
-            except:
-                pass
+                logger.info("Existing port removed successfully")
+            except Exception as e:
+                logger.debug(f"Port deletion failed (this is normal if it didn't exist): {e}")
                 
-            # Get the local port monitor
+            # List available port monitors
             monitors = win32print.EnumMonitors(None, 1)
+            logger.info("Available port monitors:")
+            for monitor in monitors:
+                logger.info(f"  - {monitor[1]}")
+            
+            # Get the local port monitor
             monitor_name = None
             for monitor in monitors:
                 if monitor[1].lower() == "local port":
@@ -103,39 +133,45 @@ class DienstplanPrinterService:
                     break
                     
             if not monitor_name:
-                print("Error: Local Port monitor not found", file=sys.stderr)
+                logger.error("Error: Local Port monitor not found")
                 return False
                 
+            logger.info(f"Using port monitor: {monitor_name}")
+            
             # Add the port using Local Port monitor
             win32print.AddPort(None, None, self.port_name)
+            logger.info("Port created successfully")
             
             return True
         except Exception as e:
-            print(f"Error creating port: {e}", file=sys.stderr)
+            logger.error(f"Error creating port: {e}", exc_info=True)
             return False
         
     def install_printer(self) -> bool:
-        """Install the printer using Windows XPS driver.
-        
-        Returns:
-            bool: True if installation was successful
-        """
+        """Install the printer using Windows Print to PDF driver."""
+        logger.info(f"Installing printer: {self.printer_name}")
         try:
+            # List available drivers
+            self.list_available_drivers()
+            
             # First create our port
             if not self.create_port():
                 return False
                 
             # Get system printer driver directory
             driver_dir = win32print.GetPrinterDriverDirectory()
+            logger.info(f"Printer driver directory: {driver_dir}")
             
             # First try to delete any existing printer
             try:
+                logger.info("Attempting to remove existing printer...")
                 handle = win32print.OpenPrinter(self.printer_name)
                 if handle:
                     win32print.DeletePrinter(handle)
                     win32print.ClosePrinter(handle)
-            except:
-                pass
+                    logger.info("Existing printer removed successfully")
+            except Exception as e:
+                logger.debug(f"Printer deletion failed (this is normal if it didn't exist): {e}")
             
             # Create printer using level 2 info structure
             printer_info = {
@@ -162,73 +198,82 @@ class DienstplanPrinterService:
                 "AveragePPM": 0
             }
             
+            logger.info("Adding printer with info:")
+            for key, value in printer_info.items():
+                logger.info(f"  {key}: {value}")
+            
             # Add the printer
             handle = win32print.AddPrinter(None, 2, printer_info)
             if handle:
                 # Set as default printer
                 win32print.SetDefaultPrinter(self.printer_name)
                 win32print.ClosePrinter(handle)
-                print(f"Successfully installed printer: {self.printer_name}")
+                logger.info(f"Successfully installed printer: {self.printer_name}")
                 return True
                 
-            print("Failed to get printer handle")
+            logger.error("Failed to get printer handle")
             return False
             
         except Exception as e:
-            print(f"Error installing printer: {e}", file=sys.stderr)
+            logger.error(f"Error installing printer: {e}", exc_info=True)
             return False
             
     def uninstall_printer(self) -> bool:
-        """Remove the virtual printer from Windows.
-        
-        Returns:
-            bool: True if uninstallation was successful
-        """
+        """Remove the virtual printer from Windows."""
+        logger.info(f"Uninstalling printer: {self.printer_name}")
         try:
             # Delete printer
             try:
+                logger.info("Attempting to remove printer...")
                 handle = win32print.OpenPrinter(self.printer_name)
                 if handle:
                     win32print.DeletePrinter(handle)
                     win32print.ClosePrinter(handle)
-            except:
-                pass
+                    logger.info("Printer removed successfully")
+            except Exception as e:
+                logger.error(f"Error removing printer: {e}", exc_info=True)
             
             # Delete port
             try:
+                logger.info("Attempting to remove port...")
                 win32print.DeletePort(None, None, self.port_name)
-            except:
-                pass
+                logger.info("Port removed successfully")
+            except Exception as e:
+                logger.error(f"Error removing port: {e}", exc_info=True)
                 
             return True
         except Exception as e:
-            print(f"Error uninstalling printer: {e}", file=sys.stderr)
+            logger.error(f"Error during uninstallation: {e}", exc_info=True)
             return False
             
     def start_monitoring(self):
         """Start monitoring for new PDFs."""
+        logger.info("Starting file monitoring")
         self.observer.start()
         
     def stop_monitoring(self):
         """Stop monitoring for new PDFs."""
+        logger.info("Stopping file monitoring")
         self.observer.stop()
         self.observer.join()
             
 def main():
     """Main entry point when running as a service."""
+    logger.info("Starting DienstplanSplitter printer service")
     service = DienstplanPrinterService()
     if service.install_printer():
-        print(f"Successfully installed printer: {service.printer_name}")
+        logger.info(f"Successfully installed printer: {service.printer_name}")
         try:
             service.start_monitoring()
-            print("Monitoring for print jobs...")
+            logger.info("Monitoring for print jobs...")
             while True:
                 time.sleep(1)
         except KeyboardInterrupt:
+            logger.info("Received shutdown signal")
             service.stop_monitoring()
             service.uninstall_printer()
     else:
-        print("Failed to install printer", file=sys.stderr)
+        logger.error("Failed to install printer")
         sys.exit(1)
 
 if __name__ == "__main__":
