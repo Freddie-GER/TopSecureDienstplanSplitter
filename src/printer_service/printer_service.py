@@ -79,7 +79,7 @@ class DienstplanPrinterService:
         
         # Port and driver names
         self.port_name = "DSPLITTER:"
-        self.driver_name = "Generic / Text Only"
+        self.driver_name = "Microsoft XPS Document Writer"  # Using XPS driver instead of Generic
         
     def create_port(self) -> bool:
         """Create a redirected printer port.
@@ -88,35 +88,34 @@ class DienstplanPrinterService:
             bool: True if port creation was successful
         """
         try:
-            # Get the port monitor
+            # First remove any existing port
+            try:
+                win32print.DeletePort(None, None, self.port_name)
+            except:
+                pass
+                
+            # Get the local port monitor
             monitors = win32print.EnumMonitors(None, 1)
             monitor_name = None
             for monitor in monitors:
-                if "Redirected Port" in monitor[1]:
+                if monitor[1].lower() == "local port":
                     monitor_name = monitor[1]
                     break
                     
             if not monitor_name:
-                print("Error: Redirected Port monitor not found", file=sys.stderr)
+                print("Error: Local Port monitor not found", file=sys.stderr)
                 return False
                 
-            # Create port info structure
-            port_info = {
-                "Port": self.port_name,
-                "Monitor": monitor_name,
-                "Description": "Dienstplan Splitter Port",
-                "Command": f'cmd.exe /c copy /b "%%1" "{self.temp_dir}\\%%2.pdf"'
-            }
+            # Add the port using Local Port monitor
+            win32print.AddPort(None, None, self.port_name)
             
-            # Add the port
-            win32print.AddPort(None, None, port_info)
             return True
         except Exception as e:
             print(f"Error creating port: {e}", file=sys.stderr)
             return False
         
     def install_printer(self) -> bool:
-        """Install the printer using a standard Windows driver.
+        """Install the printer using Windows XPS driver.
         
         Returns:
             bool: True if installation was successful
@@ -129,7 +128,16 @@ class DienstplanPrinterService:
             # Get system printer driver directory
             driver_dir = win32print.GetPrinterDriverDirectory()
             
-            # Create printer
+            # First try to delete any existing printer
+            try:
+                handle = win32print.OpenPrinter(self.printer_name)
+                if handle:
+                    win32print.DeletePrinter(handle)
+                    win32print.ClosePrinter(handle)
+            except:
+                pass
+            
+            # Create printer using level 2 info structure
             printer_info = {
                 "pServerName": None,
                 "pPrinterName": self.printer_name,
@@ -157,8 +165,13 @@ class DienstplanPrinterService:
             # Add the printer
             handle = win32print.AddPrinter(None, 2, printer_info)
             if handle:
+                # Set as default printer
+                win32print.SetDefaultPrinter(self.printer_name)
                 win32print.ClosePrinter(handle)
+                print(f"Successfully installed printer: {self.printer_name}")
                 return True
+                
+            print("Failed to get printer handle")
             return False
             
         except Exception as e:
@@ -173,13 +186,20 @@ class DienstplanPrinterService:
         """
         try:
             # Delete printer
-            handle = win32print.OpenPrinter(self.printer_name)
-            if handle:
-                win32print.DeletePrinter(handle)
-                win32print.ClosePrinter(handle)
+            try:
+                handle = win32print.OpenPrinter(self.printer_name)
+                if handle:
+                    win32print.DeletePrinter(handle)
+                    win32print.ClosePrinter(handle)
+            except:
+                pass
             
             # Delete port
-            win32print.DeletePort(None, None, self.port_name)
+            try:
+                win32print.DeletePort(None, None, self.port_name)
+            except:
+                pass
+                
             return True
         except Exception as e:
             print(f"Error uninstalling printer: {e}", file=sys.stderr)
