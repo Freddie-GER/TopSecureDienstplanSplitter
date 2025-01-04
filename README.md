@@ -57,4 +57,4 @@ pyinstaller --onefile --windowed --icon=icon.png dienstplan_splitter_gui.py
 3. Zielverzeichnis auswählen
 4. "Dienstplan aufteilen" klicken
 5. Die einzelnen PDF-Dateien werden im gewählten Verzeichnis erstellt 
-# Trigger rebuild
+
