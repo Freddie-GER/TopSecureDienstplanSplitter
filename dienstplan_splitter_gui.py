@@ -342,10 +342,13 @@ class DienstplanSplitter:
         }
 
         # Get the last date in the line first
-        full_date_match = re.search(r"Zeitraum:.*?(\d{2}\.\d{2}\.\d{4})(?:\s|$)", text)
+        full_date_match = re.search(r"Zeitraum:.*(\d{2}\.\d{2}\.\d{4})(?:\s|$)", text)
         if not full_date_match:
-            self.log_message_threadsafe("Warnung: Kein Datum am Ende der Zeile gefunden.")
-            return None, None, None
+            # Try to find any date at the end of the line
+            full_date_match = re.search(r".*(\d{2}\.\d{2}\.\d{4})(?:\s|$)", text)
+            if not full_date_match:
+                self.log_message_threadsafe("Warnung: Kein Datum am Ende der Zeile gefunden.")
+                return None, None, None
 
         last_date = full_date_match.group(1)
         try:
