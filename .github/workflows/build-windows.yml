@@ -6,6 +6,8 @@ on:
     branches:
       - main
       - feature/virtual-printer
+    tags:
+      - 'v*'  # Push events to matching v*, i.e. v1.0, v20.15.10
   pull_request:
     branches:
       - main
@@ -58,8 +60,29 @@ jobs:
         dir dist
         dist\dienstplan_splitter_printer_setup.exe status
 
-    - name: Upload installer
+    - name: Upload installer as artifact
       uses: actions/upload-artifact@v4
       with:
         name: dienstplan-splitter-printer-setup
-        path: dist/dienstplan_splitter_printer_setup.exe 
+        path: dist/dienstplan_splitter_printer_setup.exe
+
+    - name: Create Release
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        name: DienstplanSplitter Virtual Printer ${{ github.ref_name }}
+        draft: false
+        prerelease: true
+        files: |
+          dist/dienstplan_splitter_printer_setup.exe
+        body: |
+          ## DienstplanSplitter Virtual Printer ${{ github.ref_name }}
+          
+          ### Installation
+          1. Installer herunterladen (`dienstplan_splitter_printer_setup.exe`)
+          2. Als Administrator ausführen
+          3. Der virtuelle Drucker wird automatisch installiert
+          
+          ### Deinstallation
+          1. Installer erneut als Administrator ausführen
+          2. `uninstall` auswählen 
