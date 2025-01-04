@@ -94,4 +94,8 @@ def main():
         check_status()
 
 if __name__ == "__main__":
-    main() 
+    try:
+        main()
+    finally:
+        print("\nPress Enter to exit...")
+        input() 

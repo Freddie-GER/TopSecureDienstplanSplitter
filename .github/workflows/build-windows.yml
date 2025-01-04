@@ -27,7 +27,8 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       with:
-        fetch-depth: 1  # Shallow clone for faster checkout
+        fetch-depth: 0  # Full clone to ensure we have all branches
+        ref: ${{ github.ref }}  # Explicitly checkout the triggering ref
 
     - name: Set up Python
       uses: actions/setup-python@v4
@@ -71,6 +72,7 @@ jobs:
           --icon=icon.png ^
           --name dienstplan_splitter_printer_setup ^
           --uac-admin ^
+          --noconsole ^
           src/manage_printer.py
         echo "Installer build completed."
 
