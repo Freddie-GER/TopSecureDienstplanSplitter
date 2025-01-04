@@ -81,9 +81,8 @@ class DienstplanPrinterService:
         logger.info(f"Output directory: {self.output_dir}")
         
         # Create temp directory for initial PDFs
-        self.temp_dir = self.output_dir / "temp"
-        self.temp_dir.mkdir(exist_ok=True)
-        logger.info(f"Temp directory: {self.temp_dir}")
+        self.temp_dir = Path(os.path.expandvars("%USERPROFILE%\\Documents"))
+        logger.info(f"Monitoring directory: {self.temp_dir}")
         
         # Set up file monitoring
         self.event_handler = PDFHandler(self.output_dir)
@@ -91,8 +90,8 @@ class DienstplanPrinterService:
         self.observer.schedule(self.event_handler, str(self.temp_dir), recursive=False)
         
         # Port and driver names
-        self.port_name = "DSPLITTER:"
-        self.driver_name = "Microsoft Print to PDF"  # Changed back to PDF driver
+        self.port_name = "IP_" + self.printer_name.replace(" ", "_")  # Standard port naming convention
+        self.driver_name = "Generic / Text Only"  # Standard Windows driver that's always available
         logger.info(f"Using printer driver: {self.driver_name}")
         
     def list_available_drivers(self):
@@ -118,28 +117,13 @@ class DienstplanPrinterService:
                 logger.info("Existing port removed successfully")
             except Exception as e:
                 logger.debug(f"Port deletion failed (this is normal if it didn't exist): {e}")
-                
-            # List available port monitors
-            monitors = win32print.EnumMonitors(None, 1)
-            logger.info("Available port monitors:")
-            for monitor in monitors:
-                logger.info(f"  - {monitor[1]}")
             
-            # Get the local port monitor
-            monitor_name = None
-            for monitor in monitors:
-                if monitor[1].lower() == "local port":
-                    monitor_name = monitor[1]
-                    break
-                    
-            if not monitor_name:
-                logger.error("Error: Local Port monitor not found")
-                return False
-                
-            logger.info(f"Using port monitor: {monitor_name}")
-            
-            # Add the port using Local Port monitor
-            win32print.AddPort(None, None, self.port_name)
+            # Add the port using the Local Port monitor
+            win32print.AddPort(None, None, {
+                "PortName": self.port_name,
+                "MonitorName": "Local Port",
+                "Description": "Dienstplan Splitter Port"
+            })
             logger.info("Port created successfully")
             
             return True
@@ -148,21 +132,14 @@ class DienstplanPrinterService:
             return False
         
     def install_printer(self) -> bool:
-        """Install the printer using Windows Print to PDF driver."""
+        """Install the printer using a standard Windows driver."""
         logger.info(f"Installing printer: {self.printer_name}")
         try:
-            # List available drivers
-            self.list_available_drivers()
-            
             # First create our port
             if not self.create_port():
                 return False
                 
-            # Get system printer driver directory
-            driver_dir = win32print.GetPrinterDriverDirectory()
-            logger.info(f"Printer driver directory: {driver_dir}")
-            
-            # First try to delete any existing printer
+            # Remove any existing printer
             try:
                 logger.info("Attempting to remove existing printer...")
                 handle = win32print.OpenPrinter(self.printer_name)
@@ -188,7 +165,7 @@ class DienstplanPrinterService:
                 "pDatatype": "RAW",
                 "pParameters": "",
                 "pSecurityDescriptor": None,
-                "Attributes": win32print.PRINTER_ATTRIBUTE_LOCAL | win32print.PRINTER_ATTRIBUTE_SHARED,
+                "Attributes": win32print.PRINTER_ATTRIBUTE_LOCAL | win32print.PRINTER_ATTRIBUTE_QUEUED,
                 "Priority": 1,
                 "DefaultPriority": 1,
                 "StartTime": 0,
@@ -198,15 +175,9 @@ class DienstplanPrinterService:
                 "AveragePPM": 0
             }
             
-            logger.info("Adding printer with info:")
-            for key, value in printer_info.items():
-                logger.info(f"  {key}: {value}")
-            
             # Add the printer
             handle = win32print.AddPrinter(None, 2, printer_info)
             if handle:
-                # Set as default printer
-                win32print.SetDefaultPrinter(self.printer_name)
                 win32print.ClosePrinter(handle)
                 logger.info(f"Successfully installed printer: {self.printer_name}")
                 return True
