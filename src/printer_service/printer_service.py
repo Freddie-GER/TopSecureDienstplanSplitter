@@ -22,20 +22,26 @@ from datetime import datetime
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
-# Set up logging
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('printer_service.log'),
-        logging.StreamHandler(sys.stdout)
-    ]
-)
-logger = logging.getLogger(__name__)
+def setup_logging():
+    """Set up logging configuration."""
+    logger = logging.getLogger("DienstplanSplitter")
+    logger.setLevel(logging.DEBUG)
+    
+    # Create formatters
+    detailed_formatter = logging.Formatter(
+        "%(asctime)s - %(levelname)s - %(message)s"
+    )
+    
+    # Console handler
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setFormatter(detailed_formatter)
+    logger.addHandler(console_handler)
+    
+    # File handler - will be set up when we have the output directory
+    return logger
 
-logger.info("="*50)
-logger.info("Starting DienstplanSplitter Virtual Printer")
-logger.info("="*50)
+# Create logger instance
+logger = setup_logging()
 
 # Import our existing splitting logic
 try:
@@ -84,32 +90,48 @@ class PDFHandler(FileSystemEventHandler):
 class DienstplanPrinterService:
     """Main printer service class that handles printer installation and monitoring."""
     
-    def __init__(self, printer_name: str = "Dienstplan Splitter", output_dir: Optional[Path] = None):
+    def __init__(self, output_dir: str = None):
         """Initialize the printer service."""
-        logger.info("Initializing DienstplanPrinterService")
-        self.printer_name = printer_name
+        logger.info("==================================================")
+        logger.info("Starting DienstplanSplitter Virtual Printer")
+        logger.info("==================================================")
         
-        # Create output directory on desktop with today's date
-        today = datetime.now()
-        desktop = Path(os.path.expandvars("%USERPROFILE%\\Desktop"))
-        self.output_dir = desktop / f"Pläne_{today.strftime('%Y_%m_%d')}"
-        self.output_dir.mkdir(parents=True, exist_ok=True)
+        # Set up the output directory
+        if output_dir is None:
+            # Default to Desktop/Pläne_YYYY_MM_DD
+            desktop = os.path.join(os.path.expanduser("~"), "Desktop")
+            current_date = datetime.now().strftime("%Y_%m_%d")
+            output_dir = os.path.join(desktop, f"Pläne_{current_date}")
+        
+        self.output_dir = output_dir
         logger.info(f"Output directory: {self.output_dir}")
         
-        # Create temp directory for initial PDFs
-        self.temp_dir = self.output_dir / "temp"
-        self.temp_dir.mkdir(exist_ok=True)
+        # Create directories
+        os.makedirs(self.output_dir, exist_ok=True)
+        
+        # Set up file logging now that we have the output directory
+        log_file = os.path.join(self.output_dir, "printer_service.log")
+        file_handler = logging.FileHandler(log_file, encoding='utf-8')
+        file_handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
+        logger.addHandler(file_handler)
+        
+        # Create temp directory
+        self.temp_dir = os.path.join(self.output_dir, "temp")
         logger.info(f"Temp directory: {self.temp_dir}")
+        os.makedirs(self.temp_dir, exist_ok=True)
+        
+        # Printer configuration
+        self.printer_name = "Dienstplan Splitter"
+        self.port_name = "IP_Dienstplan_Splitter"
+        self.driver_name = "Microsoft XPS Document Writer"
+        logger.info(f"Using printer driver: {self.driver_name}")
+        logger.info(f"Installing printer: {self.printer_name}")
         
         # Set up file monitoring
         self.event_handler = PDFHandler(self.output_dir)
         self.observer = Observer()
         self.observer.schedule(self.event_handler, str(self.temp_dir), recursive=False)
-        
-        # Port and driver names
-        self.port_name = "IP_" + self.printer_name.replace(" ", "_")  # Standard port naming convention
-        self.driver_name = "Generic / Text Only"  # Standard Windows driver that's always available
-        logger.info(f"Using printer driver: {self.driver_name}")
+        self.observer.start()
         
     def list_available_drivers(self):
         """List all available printer drivers on the system."""
@@ -130,80 +152,98 @@ class DienstplanPrinterService:
             # First remove any existing port
             try:
                 logger.info("Attempting to remove existing port...")
-                win32print.DeletePort(None, None, self.port_name)
-                logger.info("Existing port removed successfully")
+                # Use EnumPorts to check if port exists
+                ports = win32print.EnumPorts(None, 1)
+                if any(p[1] == self.port_name for p in ports):
+                    # Port exists, but we can't delete it, so we'll reuse it
+                    logger.info("Port already exists, will reuse it")
+                    return True
             except Exception as e:
-                logger.debug(f"Port deletion failed (this is normal if it didn't exist): {e}")
+                logger.debug(f"Port check failed: {e}")
             
-            # Add the port using the Local Port monitor
-            win32print.AddPort(None, None, {
-                "PortName": self.port_name,
-                "MonitorName": "Local Port",
-                "Description": "Dienstplan Splitter Port"
-            })
-            logger.info("Port created successfully")
-            
-            return True
+            # Add the port using AddPortEx
+            try:
+                # Get the port monitor
+                monitors = win32print.EnumMonitors(None, 1)
+                local_monitor = next((m for m in monitors if m[1].lower() == "local port"), None)
+                
+                if not local_monitor:
+                    logger.error("Local Port monitor not found")
+                    return False
+                
+                # Create the port using the monitor
+                handle = win32print.OpenPrinter(None)
+                try:
+                    win32print.AddPortEx(None, local_monitor[1], 1, self.port_name)
+                    logger.info("Port created successfully")
+                    return True
+                finally:
+                    win32print.ClosePrinter(handle)
+                    
+            except Exception as e:
+                logger.error(f"Error creating port: {e}")
+                return False
+                
         except Exception as e:
-            logger.error(f"Error creating port: {e}", exc_info=True)
+            logger.error(f"Error managing port: {e}", exc_info=True)
             return False
         
     def install_printer(self) -> bool:
-        """Install the printer using a standard Windows driver."""
-        logger.info(f"Installing printer: {self.printer_name}")
+        """Install the virtual printer."""
         try:
-            # First create our port
+            # Create the port first
             if not self.create_port():
+                logger.error("Failed to create printer port")
                 return False
-                
-            # Remove any existing printer
+
+            # Remove any existing printer with the same name
             try:
-                logger.info("Attempting to remove existing printer...")
-                handle = win32print.OpenPrinter(self.printer_name)
-                if handle:
-                    win32print.DeletePrinter(handle)
-                    win32print.ClosePrinter(handle)
-                    logger.info("Existing printer removed successfully")
+                win32print.DeletePrinter(win32print.OpenPrinter(self.printer_name))
+                logger.info("Removed existing printer")
             except Exception as e:
-                logger.debug(f"Printer deletion failed (this is normal if it didn't exist): {e}")
-            
-            # Create printer using level 2 info structure
-            printer_info = {
-                "pServerName": None,
-                "pPrinterName": self.printer_name,
-                "pShareName": "",
-                "pPortName": self.port_name,
-                "pDriverName": self.driver_name,
-                "pComment": "Dienstplan Splitter Virtual Printer",
-                "pLocation": "",
-                "pDevMode": None,
-                "pSepFile": "",
-                "pPrintProcessor": "winprint",
-                "pDatatype": "RAW",
-                "pParameters": "",
-                "pSecurityDescriptor": None,
-                "Attributes": win32print.PRINTER_ATTRIBUTE_LOCAL | win32print.PRINTER_ATTRIBUTE_QUEUED,
-                "Priority": 1,
-                "DefaultPriority": 1,
-                "StartTime": 0,
-                "UntilTime": 0,
-                "Status": 0,
-                "cJobs": 0,
-                "AveragePPM": 0
-            }
-            
-            # Add the printer
-            handle = win32print.AddPrinter(None, 2, printer_info)
-            if handle:
-                win32print.ClosePrinter(handle)
-                logger.info(f"Successfully installed printer: {self.printer_name}")
+                logger.debug(f"Printer removal failed (this is normal if it didn't exist): {e}")
+
+            # Get the driver info
+            try:
+                drivers = win32print.EnumPrinterDrivers(None, None, 2)
+                driver = next((d for d in drivers if d["Name"].lower() == self.driver_name.lower()), None)
+                
+                if not driver:
+                    logger.error(f"Driver '{self.driver_name}' not found")
+                    return False
+                
+                # Create printer using PRINTER_INFO_2 structure
+                printer_info = {
+                    "pServerName": None,
+                    "pPrinterName": self.printer_name,
+                    "pShareName": None,
+                    "pPortName": self.port_name,
+                    "pDriverName": driver["Name"],
+                    "pComment": "Virtual printer for Dienstplan Splitter",
+                    "pLocation": None,
+                    "pDevMode": None,
+                    "pSepFile": None,
+                    "pPrintProcessor": "winprint",
+                    "pDatatype": "RAW",
+                    "pParameters": None,
+                    "pSecurityDescriptor": None,
+                    "Attributes": 0x00000002,  # PRINTER_ATTRIBUTE_LOCAL
+                    "Priority": 0,
+                    "DefaultPriority": 0,
+                    "StartTime": 0,
+                    "UntilTime": 0,
+                }
+                
+                win32print.AddPrinter(None, 2, printer_info)
+                logger.info("Printer installed successfully")
                 return True
                 
-            logger.error("Failed to get printer handle")
-            return False
-            
+            except Exception as e:
+                logger.error(f"Error installing printer: {e}", exc_info=True)
+                return False
+                
         except Exception as e:
-            logger.error(f"Error installing printer: {e}", exc_info=True)
+            logger.error(f"Error in printer installation: {e}", exc_info=True)
             return False
             
     def uninstall_printer(self) -> bool:
