@@ -12,18 +12,28 @@ on:
     branches:
       - main
 
+# Add explicit permissions
+permissions:
+  contents: write
+  packages: write
+  actions: write
+
 jobs:
   build:
     runs-on: windows-latest
+    timeout-minutes: 15  # Set maximum job runtime
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 1  # Shallow clone for faster checkout
 
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.11'
+        cache: 'pip'  # Enable pip caching
 
     - name: Clean build directories
       shell: cmd
@@ -40,6 +50,7 @@ jobs:
         pip install --no-cache-dir pyinstaller==6.1.0
         pip install --no-cache-dir pywin32==306
         pip install --no-cache-dir watchdog==3.0.0
+      timeout-minutes: 5  # Set timeout for dependency installation
 
     - name: Create Version File
       shell: cmd
@@ -49,7 +60,9 @@ jobs:
 
     - name: Build installer
       shell: cmd
+      timeout-minutes: 5  # Set timeout for build process
       run: |
+        echo "Starting installer build..."
         pyinstaller --clean --onefile ^
           --add-data "version.txt;." ^
           --add-data "src/printer_service;printer_service" ^
@@ -59,24 +72,29 @@ jobs:
           --name dienstplan_splitter_printer_setup ^
           --uac-admin ^
           src/manage_printer.py
+        echo "Installer build completed."
 
     - name: Verify build output
       shell: cmd
       run: |
+        echo "Checking build output..."
         dir dist
         if not exist "dist\dienstplan_splitter_printer_setup.exe" (
           echo Error: Installer not found in dist directory
           exit /b 1
         )
+        echo "Build verification completed."
 
     - name: Upload installer as artifact
+      if: success()  # Only run if previous steps succeeded
       uses: actions/upload-artifact@v4
       with:
         name: dienstplan-splitter-printer-setup
         path: dist/dienstplan_splitter_printer_setup.exe
+        retention-days: 5  # Keep artifacts for 5 days
 
     - name: Create Release
-      if: startsWith(github.ref, 'refs/tags/')
+      if: startsWith(github.ref, 'refs/tags/') && success()
       uses: softprops/action-gh-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
