@@ -33,7 +33,14 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Import our existing splitting logic
-from ..gui.dienstplan_splitter_gui import DienstplanSplitter
+try:
+    from gui.dienstplan_splitter_gui import DienstplanSplitter  # Try direct import first
+except ImportError:
+    try:
+        from src.gui.dienstplan_splitter_gui import DienstplanSplitter  # Try with src prefix
+    except ImportError:
+        logger.error("Could not import DienstplanSplitter. Please check the installation.")
+        sys.exit(1)
 
 class PDFHandler(FileSystemEventHandler):
     """Handles PDF files created by Windows Print to PDF."""

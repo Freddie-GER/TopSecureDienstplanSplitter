@@ -66,13 +66,14 @@ jobs:
         echo "Starting installer build..."
         pyinstaller --clean --onefile ^
           --add-data "version.txt;." ^
-          --add-data "src/printer_service;printer_service" ^
-          --add-data "src/core;core" ^
-          --add-data "src/gui;gui" ^
+          --add-data "src/printer_service;src/printer_service" ^
+          --add-data "src/core;src/core" ^
+          --add-data "src/gui;src/gui" ^
           --icon=icon.png ^
           --name dienstplan_splitter_printer_setup ^
           --uac-admin ^
           --noconsole ^
+          --paths "src" ^
           src/manage_printer.py
         echo "Installer build completed."
 
