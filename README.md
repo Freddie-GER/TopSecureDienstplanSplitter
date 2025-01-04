@@ -1,14 +1,12 @@
-# Dienstplan Splitter
+# Dienstplan Splitter (Virtual Printer Edition)
 
-Ein Tool zum Aufteilen von TopSecure Dienstplänen, die in einer einzelnen großen PDF liegen in einzelne PDF-Dateien pro Person.
+Ein Tool zum Aufteilen von TopSecure Dienstplänen durch einen virtuellen Drucker.
 (TopSecure ist ein Planungsprogramm der BYTE AG und deprecated)
 
-
 ## Features
-- Benutzerfreundliche grafische Oberfläche
-- Einfache Dateiauswahl per Klick
-- Fortschrittsanzeige während der Verarbeitung
-- Erkennt automatisch ein- und zweiseitige Dienstpläne
+- Erscheint als virtueller Drucker im System
+- Teilt Dienstpläne automatisch beim Drucken auf
+- Keine manuelle PDF-Verarbeitung notwendig
 - Extrahiert Namen und Datum aus dem PDF
 - Erstellt separate PDFs für jede Person
 - Benennt Dateien automatisch
@@ -18,43 +16,34 @@ Ein Tool zum Aufteilen von TopSecure Dienstplänen, die in einer einzelnen groß
 
 ## Installation
 
-- Unter *Actions* steht ein Windows - Download bereit; da die App nicht signiert ist, wir es hier aber ggfs. zu Viruswarnungen kommen!
-- Für den Weg via Python empfehle ich conda oder venv zu nutzen, um die dependencies sauber zu halten
-
 ### Voraussetzungen
-- Python 3.11 oder höher
-- pip (Python Package Manager)
+- Windows 10/11
+- Administrative Rechte für die Druckerinstallation
+- Python 3.11 oder höher (für Entwicklung)
 
-### Abhängigkeiten installieren
+### Für Benutzer
+1. Installer herunterladen
+2. Als Administrator ausführen
+3. Virtuellen Drucker "Dienstplan Splitter" im System auswählen
+4. Zielverzeichnis für die aufgeteilten PDFs konfigurieren
+
+### Für Entwickler
 ```bash
-pip install numpy==1.26.4 PyPDF2==3.0.1 pdfplumber==0.10.3 pyinstaller
+pip install -r requirements.txt
 ```
-
-## App erstellen
-
-### Für macOS
-1. Terminal öffnen
-2. In das Projektverzeichnis wechseln
-3. Folgenden Befehl ausführen:
-```bash
-pyinstaller --onefile --windowed --icon=icon.png dienstplan_splitter_gui.py
-```
-4. Die fertige App befindet sich im `dist`-Ordner
-5. Die App kann in den Programme-Ordner verschoben werden
-
-### Für Windows
-1. Kommandozeile (cmd) öffnen
-2. In das Projektverzeichnis wechseln
-3. Folgenden Befehl ausführen:
-```bash
-pyinstaller --onefile --windowed --icon=icon.png dienstplan_splitter_gui.py
-```
-4. Die fertige EXE-Datei befindet sich im `dist`-Ordner
 
 ## Verwendung
-1. App starten
-2. PDF-Datei auswählen
-3. Zielverzeichnis auswählen
-4. "Dienstplan aufteilen" klicken
-5. Die einzelnen PDF-Dateien werden im gewählten Verzeichnis erstellt 
+1. In TopSecure den Dienstplan wie gewohnt zum Drucken auswählen
+2. Als Drucker "Dienstplan Splitter" wählen
+3. Drucken klicken
+4. Die einzelnen PDF-Dateien werden automatisch im konfigurierten Verzeichnis erstellt
+
+## Entwicklung
+Dieses Projekt ist ein Fork des originalen [Dienstplan Splitter](https://github.com/Freddie-GER/TopSecureDienstplanSplitter), 
+erweitert um die Funktionalität eines virtuellen Druckers.
+
+### Technische Details
+- Verwendet PDF Creator SDK für die virtuelle Druckerfunktionalität
+- Basiert auf der bewährten Parsing-Logik des originalen Dienstplan Splitters
+- Implementiert als Windows-Druckerservice
 
