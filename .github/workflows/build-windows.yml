@@ -1,10 +1,11 @@
-name: Build Windows Executable
+name: Build Windows Installer
 
-# Workflow to build Windows executable for Dienstplan Splitter
+# Workflow to build Windows installer for Dienstplan Splitter Virtual Printer
 on:
   push:
     branches:
       - main
+      - feature/virtual-printer
   pull_request:
     branches:
       - main
@@ -20,7 +21,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.x'
+        python-version: '3.11'
 
     - name: Clean build directories
       run: |
@@ -32,14 +33,33 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install --no-cache-dir -r requirements.txt
-
-    - name: Build executable
-      run: |
         pip install --no-cache-dir pyinstaller
-        pyinstaller --clean --onefile --windowed dienstplan_splitter_gui.py
+        pip install --no-cache-dir pywin32
 
-    - name: Upload artifact
+    - name: Create Version File
+      run: |
+        echo ${{ github.sha }} > version.txt
+        echo ${{ github.ref }} >> version.txt
+
+    - name: Build installer
+      run: |
+        pyinstaller --clean --onefile ^
+          --add-data "version.txt;." ^
+          --add-data "src/printer_service;printer_service" ^
+          --add-data "src/core;core" ^
+          --add-data "src/gui;gui" ^
+          --icon=icon.png ^
+          --name dienstplan_splitter_printer_setup ^
+          --uac-admin ^
+          src/manage_printer.py
+
+    - name: Test installer
+      run: |
+        dir dist
+        dist\dienstplan_splitter_printer_setup.exe status
+
+    - name: Upload installer
       uses: actions/upload-artifact@v4
       with:
-        name: dienstplan-splitter-${{ github.sha }}
-        path: dist/ 
+        name: dienstplan-splitter-printer-setup
+        path: dist/dienstplan_splitter_printer_setup.exe 
