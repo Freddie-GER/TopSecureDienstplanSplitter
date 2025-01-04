@@ -18,6 +18,7 @@ import win32con
 import logging
 from pathlib import Path
 from typing import Optional
+from datetime import datetime
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
@@ -87,13 +88,18 @@ class DienstplanPrinterService:
         """Initialize the printer service."""
         logger.info("Initializing DienstplanPrinterService")
         self.printer_name = printer_name
-        self.output_dir = output_dir or Path.home() / "Documents" / "Dienstplan Splitter"
+        
+        # Create output directory on desktop with today's date
+        today = datetime.now()
+        desktop = Path(os.path.expandvars("%USERPROFILE%\\Desktop"))
+        self.output_dir = desktop / f"Pläne_{today.strftime('%Y_%m_%d')}"
         self.output_dir.mkdir(parents=True, exist_ok=True)
         logger.info(f"Output directory: {self.output_dir}")
         
         # Create temp directory for initial PDFs
-        self.temp_dir = Path(os.path.expandvars("%USERPROFILE%\\Documents"))
-        logger.info(f"Monitoring directory: {self.temp_dir}")
+        self.temp_dir = self.output_dir / "temp"
+        self.temp_dir.mkdir(exist_ok=True)
+        logger.info(f"Temp directory: {self.temp_dir}")
         
         # Set up file monitoring
         self.event_handler = PDFHandler(self.output_dir)
@@ -241,9 +247,9 @@ class DienstplanPrinterService:
             
 def main():
     """Main entry point when running as a service."""
-    logger.info("Starting DienstplanSplitter printer service")
-    service = DienstplanPrinterService()
     try:
+        logger.info("Starting DienstplanSplitter printer service")
+        service = DienstplanPrinterService()
         if service.install_printer():
             logger.info(f"Successfully installed printer: {service.printer_name}")
             try:
@@ -257,13 +263,20 @@ def main():
                 service.uninstall_printer()
         else:
             logger.error("Failed to install printer")
-            sys.exit(1)
+            return False
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}", exc_info=True)
+        return False
     finally:
         # Clean up logging handlers
         for handler in logger.handlers[:]:
             handler.flush()
             handler.close()
             logger.removeHandler(handler)
+        return True
 
 if __name__ == "__main__":
-    main() 
+    success = main()
+    if not success:
+        print("\nPress Enter to exit...")
+        input() 

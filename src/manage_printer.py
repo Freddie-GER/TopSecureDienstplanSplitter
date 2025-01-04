@@ -84,47 +84,56 @@ def check_status():
 
 def main():
     """Main entry point for the management script."""
-    logger.info("Starting printer management script")
-    parser = argparse.ArgumentParser(
-        description="Manage the DienstplanSplitter virtual printer"
-    )
-    parser.add_argument(
-        'command',
-        nargs='?',  # Make command optional
-        choices=['install', 'uninstall', 'status'],
-        help='Command to execute'
-    )
-    
-    args = parser.parse_args()
-    
-    # Check for admin rights
-    if not is_admin():
-        logger.error("❌ This script must be run as administrator!")
-        logger.error("Please right-click and select 'Run as administrator'")
-        return  # Changed from sys.exit(1) to allow pause at end
-    
-    # If no command provided, show help and install by default
-    if not args.command:
-        logger.info("No command provided. Available commands:")
-        parser.print_help()
-        logger.info("\nInstalling printer by default...")
-        install_printer()
-        return
-    
-    if args.command == 'install':
-        install_printer()
-    elif args.command == 'uninstall':
-        uninstall_printer()
-    elif args.command == 'status':
-        check_status()
+    try:
+        logger.info("Starting printer management script")
+        parser = argparse.ArgumentParser(
+            description="Manage the DienstplanSplitter virtual printer"
+        )
+        parser.add_argument(
+            'command',
+            nargs='?',  # Make command optional
+            choices=['install', 'uninstall', 'status'],
+            help='Command to execute'
+        )
+        
+        args = parser.parse_args()
+        
+        # Check for admin rights
+        if not is_admin():
+            logger.error("❌ This script must be run as administrator!")
+            logger.error("Please right-click and select 'Run as administrator'")
+            return False
+        
+        # If no command provided, show help and install by default
+        if not args.command:
+            logger.info("No command provided. Available commands:")
+            parser.print_help()
+            logger.info("\nInstalling printer by default...")
+            return install_printer()
+        
+        if args.command == 'install':
+            return install_printer()
+        elif args.command == 'uninstall':
+            return uninstall_printer()
+        elif args.command == 'status':
+            check_status()
+            return True
+            
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}", exc_info=True)
+        return False
 
 if __name__ == "__main__":
     try:
-        main()
+        success = main()
+    except Exception as e:
+        logger.error(f"Critical error: {e}", exc_info=True)
+        success = False
     finally:
         # Clean up logging handlers
         for handler in logging.getLogger().handlers[:]:
             handler.flush()
             handler.close()
-        print("\nPress Enter to continue...")
-        input() 
+        if not success:
+            print("\nPress Enter to continue...")
+            input() 
