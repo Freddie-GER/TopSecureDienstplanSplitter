@@ -32,19 +32,27 @@ def handle_compound_names(line: str) -> str:
     return line
 
 class DienstplanSplitter:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("Dienstplan Splitter")
-
+    def __init__(self, parent=None):
+        self.parent = parent
+        self.selected_file = None
+        self.output_dir = None
+        
+        # Only set up GUI elements if we have a parent window
+        if parent is not None:
+            self.parent.title("Dienstplan Splitter")
+            self.setup_gui()
+        
+    def setup_gui(self):
+        """Set up the GUI elements."""
         window_width = 600
         window_height = 400
-        screen_width = root.winfo_screenwidth()
-        screen_height = root.winfo_screenheight()
+        screen_width = self.parent.winfo_screenwidth()
+        screen_height = self.parent.winfo_screenheight()
         center_x = int(screen_width / 2 - window_width / 2)
         center_y = int(screen_height / 2 - window_height / 2)
-        self.root.geometry(f"{window_width}x{window_height}+{center_x}+{center_y}")
+        self.parent.geometry(f"{window_width}x{window_height}+{center_x}+{center_y}")
 
-        main_frame = ttk.Frame(root, padding="20")
+        main_frame = ttk.Frame(self.parent, padding="20")
         main_frame.pack(fill=tk.BOTH, expand=True)
 
         # File selection frame
@@ -91,8 +99,6 @@ class DienstplanSplitter:
         )
         self.process_button.pack(pady=(20, 0))
 
-        self.selected_file = None
-        self.output_dir = None
         self.processing = False
 
         # Variables to track the last generated PDF
@@ -101,7 +107,7 @@ class DienstplanSplitter:
 
         # Queue for thread-safe logging
         self.queue = queue.Queue()
-        self.root.after(100, self.process_queue)
+        self.parent.after(100, self.process_queue)
 
     def handle_drop(self, event):
         try:
@@ -170,9 +176,15 @@ class DienstplanSplitter:
                 task()
         except queue.Empty:
             pass
-        self.root.after(100, self.process_queue)
+        self.parent.after(100, self.process_queue)
 
     def process_pdf(self):
+        """Process the selected PDF file."""
+        if not self.selected_file or not self.output_dir:
+            if self.parent is not None:
+                messagebox.showerror("Error", "Please select a PDF file and output directory first.")
+            return False
+            
         try:
             if not os.path.exists(self.selected_file):
                 self.log_message_threadsafe("Fehler: Datei nicht gefunden!")
