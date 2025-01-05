@@ -40,6 +40,25 @@ jobs:
         pip install --no-cache-dir -r requirements.txt
         Write-Host "Dependencies installed successfully"
 
+    - name: Create Windows icon
+      run: |
+        Write-Host "Installing Pillow for icon conversion..."
+        pip install --no-cache-dir pillow
+        
+        Write-Host "Converting PNG to ICO..."
+        python -c "
+        from PIL import Image
+        img = Image.open('icon.png')
+        icon_sizes = [(16,16), (32,32), (48,48), (64,64), (128,128), (256,256)]
+        img.save('icon.ico', sizes=icon_sizes)
+        "
+        
+        if (!(Test-Path "icon.ico")) {
+            Write-Error "Icon conversion failed"
+            exit 1
+        }
+        Write-Host "Icon converted successfully"
+
     - name: Build executable
       run: |
         Write-Host "Installing PyInstaller..."
@@ -48,7 +67,7 @@ jobs:
         Write-Host "Building executable..."
         pyinstaller --clean --onefile --windowed `
           --name "DienstplanSplitter" `
-          --icon "assets/icon.ico" `
+          --icon "icon.ico" `
           dienstplan_splitter_gui.py
         
         Write-Host "Build completed"
