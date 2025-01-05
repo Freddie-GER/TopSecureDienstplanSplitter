@@ -17,18 +17,19 @@ Ein Tool zum Aufteilen von TopSecure Dienstplänen, die in einer einzelnen groß
     - Nachname_Vorname_YYYY_MM_DD für Pläne, die für den aktuellen Monat sind. So können Planänderungen im laufenden Monat nachvollzogen werden.  
 
 ## Installation
+Einfach die EXE-Datei herunterladen und ausführen. Keine Installation notwendig.
 
-- Unter *Actions* steht ein Windows - Download bereit; da die App nicht signiert ist, wir es hier aber ggfs. zu Viruswarnungen kommen!
-- Für den Weg via Python empfehle ich conda oder venv zu nutzen, um die dependencies sauber zu halten
+## Systemanforderungen
+- Windows 10 oder neuer
+- Keine zusätzliche Software erforderlich
 
-### Voraussetzungen
-- Python 3.11 oder höher
-- pip (Python Package Manager)
+## Lizenz
+Dieses Projekt steht unter der GNU General Public License v3.0 mit zusätzlichen Einschränkungen:
+- Keine kommerzielle Nutzung ohne ausdrückliche Genehmigung
+- Namensnennung erforderlich
+- Speziell entwickelt für TopSecure Dienstpläne
 
-### Abhängigkeiten installieren
-```bash
-pip install numpy==1.26.4 PyPDF2==3.0.1 pdfplumber==0.10.3 pyinstaller
-```
+Vollständige Lizenzdetails finden Sie in der [LICENSE](LICENSE) Datei.
 
 ## App erstellen
 
@@ -58,3 +59,6 @@ pyinstaller --onefile --windowed --icon=icon.png dienstplan_splitter_gui.py
 4. "Dienstplan aufteilen" klicken
 5. Die einzelnen PDF-Dateien werden im gewählten Verzeichnis erstellt 
 
+# Herausgeber
+R2 Brainworks B.V.
+Amsterdam, Niederlande
