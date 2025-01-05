@@ -70,6 +70,38 @@ jobs:
         Write-Host "Installing PyInstaller..."
         pip install --no-cache-dir pyinstaller
         
+        Write-Host "Creating version info..."
+        $version_info = @"
+        VSVersionInfo(
+          ffi=FixedFileInfo(
+            filevers=(1, 0, 0, 0),
+            prodvers=(1, 0, 0, 0),
+            mask=0x3f,
+            flags=0x0,
+            OS=0x40004,
+            fileType=0x1,
+            subtype=0x0,
+            date=(0, 0)
+          ),
+          kids=[
+            StringFileInfo([
+              StringTable(
+                u'040904B0',
+                [StringStruct(u'CompanyName', u'R2 Brainworks B.V.'),
+                StringStruct(u'FileDescription', u'DienstplanSplitter - PDF Schedule Splitter'),
+                StringStruct(u'FileVersion', u'1.0.0'),
+                StringStruct(u'InternalName', u'DienstplanSplitter'),
+                StringStruct(u'LegalCopyright', u'© 2024 R2 Brainworks B.V. All rights reserved.'),
+                StringStruct(u'OriginalFilename', u'DienstplanSplitter.exe'),
+                StringStruct(u'ProductName', u'DienstplanSplitter'),
+                StringStruct(u'ProductVersion', u'1.0.0'),
+                StringStruct(u'Publisher', u'R2 Brainworks B.V., Amsterdam, Netherlands')])
+            ]),
+            VarFileInfo([VarStruct(u'Translation', [1033, 1200])])
+          ]
+        )
+"@ | Set-Content -Path "version_info.txt"
+        
         Write-Host "Building executable..."
         pyinstaller --clean --onefile --windowed `
           --name "DienstplanSplitter" `
@@ -79,6 +111,7 @@ jobs:
           --hidden-import "tkinter.filedialog" `
           --hidden-import "tkinter.messagebox" `
           --add-data "icon.png;." `
+          --version-file "version_info.txt" `
           dienstplan_splitter_gui.py
         
         Write-Host "Build completed"
