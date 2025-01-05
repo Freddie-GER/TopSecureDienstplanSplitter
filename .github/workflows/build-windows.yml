@@ -39,6 +39,12 @@ jobs:
         python -m pip install --upgrade pip
         pip install --no-cache-dir -r requirements.txt
         Write-Host "Dependencies installed successfully"
+        
+        Write-Host "Python environment info:"
+        python --version
+        pip list
+        Write-Host "Working directory contents:"
+        Get-ChildItem
 
     - name: Create Windows icon
       run: |
@@ -68,6 +74,11 @@ jobs:
         pyinstaller --clean --onefile --windowed `
           --name "DienstplanSplitter" `
           --icon "icon.ico" `
+          --hidden-import "tkinter" `
+          --hidden-import "tkinter.ttk" `
+          --hidden-import "tkinter.filedialog" `
+          --hidden-import "tkinter.messagebox" `
+          --add-data "icon.png;." `
           dienstplan_splitter_gui.py
         
         Write-Host "Build completed"
@@ -75,6 +86,8 @@ jobs:
         # Verify build output
         if (!(Test-Path "dist/DienstplanSplitter.exe")) {
             Write-Error "Build failed: Executable not found"
+            Write-Host "Directory contents:"
+            Get-ChildItem -Recurse
             exit 1
         }
         Write-Host "Build verification successful"
