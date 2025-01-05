@@ -19,19 +19,29 @@ Ein Tool zum Aufteilen von TopSecure Dienstplänen, die in einer einzelnen groß
 ## Installation
 Einfach die EXE-Datei herunterladen und ausführen. Keine Installation notwendig.
 
-## Systemanforderungen
+(Eine MacOS version kann manuell erstellt werden, siehe unten) 
+
+
+## Systemanforderungen WIN
 - Windows 10 oder neuer
 - Keine zusätzliche Software erforderlich
+
+## Systemanforderungen MAC
+
+- MacOS 14 oder neuer (manuelle installation nötig)
+- Für die Requirements bitte auf die MAC-Version achten
+
 
 ## Lizenz
 Dieses Projekt steht unter der GNU General Public License v3.0 mit zusätzlichen Einschränkungen:
 - Keine kommerzielle Nutzung ohne ausdrückliche Genehmigung
 - Namensnennung erforderlich
-- Speziell entwickelt für TopSecure Dienstpläne
+- Speziell entwickelt für Dienstpläne, die aus dem Programm TopSecure der Byte AG erstellt wurden.
+-   Topsecure ist deprecated; wir stehen in keinem Verhältnis zur Byte AG
 
 Vollständige Lizenzdetails finden Sie in der [LICENSE](LICENSE) Datei.
 
-## App erstellen
+## App manuell erstellen
 
 ### Für macOS
 1. Terminal öffnen
