@@ -1,8 +1,18 @@
-# Dienstplan Splitter
+# DienstplanSplitter
 
 Ein Tool zum Aufteilen von TopSecure Dienstplänen, die in einer einzelnen großen PDF liegen in einzelne PDF-Dateien pro Person.
 (TopSecure ist ein Planungsprogramm der BYTE AG und deprecated)
 
+## Installation & Ausführung
+1. EXE-Datei herunterladen
+2. **Wichtiger Hinweis zu Windows SmartScreen:**
+   - Beim ersten Start erscheint möglicherweise eine Windows SmartScreen Warnung
+   - Dies ist normal, da die Software nicht über ein teures Code-Signing-Zertifikat verfügt
+   - Um die Software trotzdem auszuführen:
+     1. Auf "Weitere Informationen" klicken
+     2. Dann auf "Trotzdem ausführen" klicken
+   - Die Warnung erscheint nur beim ersten Start
+   - Der Quellcode ist öffentlich auf GitHub verfügbar und kann geprüft werden
 
 ## Features
 - Benutzerfreundliche grafische Oberfläche
@@ -15,9 +25,6 @@ Ein Tool zum Aufteilen von TopSecure Dienstplänen, die in einer einzelnen groß
   - Die Konvention ist
     - Nachname_Vorname_YYYY_MM für Pläne, die nicht für den aktuellen Monat sind, und
     - Nachname_Vorname_YYYY_MM_DD für Pläne, die für den aktuellen Monat sind. So können Planänderungen im laufenden Monat nachvollzogen werden.  
-
-## Installation
-Einfach die EXE-Datei herunterladen und ausführen. Keine Installation notwendig.
 
 ## Systemanforderungen
 - Windows 10 oder neuer
@@ -59,6 +66,6 @@ pyinstaller --onefile --windowed --icon=icon.png dienstplan_splitter_gui.py
 4. "Dienstplan aufteilen" klicken
 5. Die einzelnen PDF-Dateien werden im gewählten Verzeichnis erstellt 
 
-# Herausgeber
+## Herausgeber
 R2 Brainworks B.V.
 Amsterdam, Niederlande
